@@ -66,13 +66,32 @@ def inspect_non_collection(artifact_type):
         if artifact.id not in collection_artifacts:
             print(f"{artifact_type} '{artifact.id}' is not in any collection.")
 
+def clean_collection(collection_slug):
+    collection = api.get_collection(collection_slug)
+    for item in collection.items:
+        try:
+            # Ask user if they want to delete this item
+            print("="*100)
+            response = input(f"Do you want to delete {item.item_type} '{item.item_id}' from collection? (yes/no): ").strip().lower()
+            if response == 'yes':
+                api.delete_repo(repo_id=item.item_id, repo_type=item.item_type)
+                print(f"Deleted {item.item_type} '{item.item_id}'.")
+            else:
+                print(f"Skipped {item.item_type} '{item.item_id}'.")
+            print("="*100)
+        except KeyboardInterrupt:
+            signal_handler(signal.SIGINT, None)
+
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--cleanup-mode", type=str, choices=["private", "non-collection"])
+    parser.add_argument("--cleanup-mode", type=str, choices=["private", "non-collection", "collection"])
     parser.add_argument("--artifact-type", type=str, choices=["dataset", "model"])
+    parser.add_argument("--collection-slug", type=str, default=None)
     args = parser.parse_args()
 
     if args.cleanup_mode == "private":
         clean_private(args.artifact_type)
     elif args.cleanup_mode == "non-collection":
         inspect_non_collection(args.artifact_type)
+    elif args.cleanup_mode == "collection":
+        clean_collection(args.collection_slug)
